@@ -4,13 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 func main() {
-	path := os.Getenv("PATH")
-	fmt.Println(path)
-
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
 		input, _ := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -42,15 +40,38 @@ func SetUpCommands() map[string]CommandHandler {
 		},
 	}
 	commandMap["type"] = func(command string, args []string) {
+		path := os.Getenv("PATH")
+		dirs := strings.Split(path, ":")
 		commandToCheck := args[0]
+
 		if _, commandFound := commandMap[commandToCheck]; commandFound {
 			fmt.Printf("%s is a shell builtin\n", commandToCheck)
-		} else {
-			fmt.Printf("%s: not found\n", commandToCheck)
+			return
 		}
 
+		executablePath, isExecutable := GetExecutablePath(commandToCheck, dirs)
+		if !isExecutable {
+			fmt.Printf("%s: not found\n", commandToCheck)
+			return
+		}
+
+		fmt.Printf("%s is %s\n", commandToCheck, executablePath)
 	}
+
 	return commandMap
+}
+
+func GetExecutablePath(command string, dirs []string) (path string, isExecutable bool) {
+	for _, dir := range dirs {
+		executablePath := filepath.Join(dir, command)
+		if _, err := os.Stat(executablePath); err == nil {
+			if fileInfo, _ := os.Stat(executablePath); fileInfo.Mode()&0111 != 0 {
+				return executablePath, true
+			}
+		}
+	}
+
+	return "", false
 }
 
 type CommandHandler func(command string, args []string)
