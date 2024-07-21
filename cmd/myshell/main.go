@@ -11,12 +11,15 @@ func main() {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
 		input, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-		command, _ := ParseInput(input)
+		command, args := ParseInput(input)
 		if command == "exit" {
 			os.Exit(0)
+		} else if command == "echo" {
+			returnValue := strings.Join(args, " ")
+			fmt.Println(returnValue)
+		} else {
+			fmt.Printf("%s: command not found\n", command)
 		}
-
-		fmt.Printf("%s: command not found\n", command)
 	}
 }
 
