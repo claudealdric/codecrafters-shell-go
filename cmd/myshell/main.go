@@ -9,59 +9,90 @@ import (
 )
 
 func main() {
-	for {
-		fmt.Fprint(os.Stdout, "$ ")
-		input, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-		command, args := ParseInput(input)
-		commandMap := SetUpCommands()
+	shell := NewShell()
+	shell.Run()
+}
 
-		if handleCommand, commandFound := commandMap[command]; commandFound {
-			handleCommand(command, args)
+type CommandHandler func(shell *Shell, args []string)
+
+type Shell struct {
+	commandMap map[string]CommandHandler
+}
+
+func NewShell() *Shell {
+	shell := &Shell{
+		commandMap: make(map[string]CommandHandler),
+	}
+	shell.SetUpCommands()
+	return shell
+}
+
+func (shell *Shell) SetUpCommands() {
+	shell.commandMap["exit"] = Exit
+	shell.commandMap["echo"] = Echo
+	shell.commandMap["type"] = Type
+}
+
+func (shell *Shell) Run() {
+	for {
+		PrintPrompt()
+		input := ReadInput()
+		command, args := ParseInput(input)
+
+		handleCommand, commandFound := shell.commandMap[command]
+		if commandFound {
+			handleCommand(shell, args)
 		} else {
 			fmt.Printf("%s: command not found\n", command)
 		}
 	}
 }
 
-func ParseInput(input string) (command string, args []string) {
-	input = strings.Replace(input, "\n", "", 1)
-	parts := strings.Split(input, " ")
+func PrintPrompt() {
+	fmt.Fprint(os.Stdout, "$ ")
+}
+
+func ReadInput() (input string) {
+	input, _ = bufio.NewReader(os.Stdin).ReadString('\n')
+	return input
+}
+
+func ParseInput(inputs string) (command string, args []string) {
+	inputs = strings.Replace(inputs, "\n", "", 1)
+	parts := strings.Split(inputs, " ")
 	return parts[0], parts[1:]
 }
 
-func SetUpCommands() map[string]CommandHandler {
-	commandMap := map[string]CommandHandler{
-		"exit": func(command string, args []string) {
-			os.Exit(0)
-		},
-		"echo": func(command string, args []string) {
-			returnValue := strings.Join(args, " ")
-			fmt.Println(returnValue)
-		},
-	}
-	commandMap["type"] = func(command string, args []string) {
-		path := os.Getenv("PATH")
-		dirs := strings.Split(path, ":")
-		commandToCheck := args[0]
-
-		if _, commandFound := commandMap[commandToCheck]; commandFound {
-			fmt.Printf("%s is a shell builtin\n", commandToCheck)
-			return
-		}
-
-		executablePath, isExecutable := GetExecutablePath(commandToCheck, dirs)
-		if !isExecutable {
-			fmt.Printf("%s: not found\n", commandToCheck)
-			return
-		}
-
-		fmt.Printf("%s is %s\n", commandToCheck, executablePath)
-	}
-
-	return commandMap
+func Echo(shell *Shell, args []string) {
+	fmt.Println(strings.Join(args, " "))
 }
 
-func GetExecutablePath(command string, dirs []string) (path string, isExecutable bool) {
+func Exit(shell *Shell, args []string) {
+	os.Exit(0)
+}
+
+func Type(shell *Shell, args []string) {
+	commandToCheck := args[0]
+
+	_, commandFound := shell.commandMap[commandToCheck]
+	if commandFound {
+		fmt.Printf("%s is a shell builtin\n", commandToCheck)
+		return
+	}
+
+	executablePath, isExecutable := GetExecutablePath(commandToCheck)
+	if !isExecutable {
+		fmt.Printf("%s: not found\n", commandToCheck)
+		return
+	}
+
+	fmt.Printf("%s is %s\n", commandToCheck, executablePath)
+}
+
+func GetExecutablePath(command string) (executablePath string, isExecutable bool) {
+	path := os.Getenv("PATH")
+	dirs := strings.Split(path, ":")
+
 	for _, dir := range dirs {
 		executablePath := filepath.Join(dir, command)
 		if _, err := os.Stat(executablePath); err == nil {
@@ -73,5 +104,3 @@ func GetExecutablePath(command string, dirs []string) (path string, isExecutable
 
 	return "", false
 }
-
-type CommandHandler func(command string, args []string)
