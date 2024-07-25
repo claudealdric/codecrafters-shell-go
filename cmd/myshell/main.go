@@ -10,40 +10,40 @@ import (
 )
 
 func main() {
-	shell := Shell{
+	s := Shell{
 		make(map[string]CommandHandler),
 	}
-	shell.SetUpCommands()
-	shell.Run()
+	s.SetUpCommands()
+	s.Run()
 }
 
-type CommandHandler func(shell *Shell, args []string)
+type CommandHandler func(s *Shell, args []string)
 
 type Shell struct {
 	commandMap map[string]CommandHandler
 }
 
-func (shell *Shell) SetUpCommands() {
-	shell.commandMap["exit"] = Exit
-	shell.commandMap["echo"] = Echo
-	shell.commandMap["type"] = Type
+func (s *Shell) SetUpCommands() {
+	s.commandMap["exit"] = Exit
+	s.commandMap["echo"] = Echo
+	s.commandMap["type"] = Type
 }
 
-func (shell *Shell) Run() {
+func (s *Shell) Run() {
 	for {
 		PrintPrompt()
 		input := ReadInput()
 		command, args := ParseInput(input)
 
-		handleCommand, commandFound := shell.commandMap[command]
+		handleCommand, commandFound := s.commandMap[command]
 		if commandFound {
-			handleCommand(shell, args)
+			handleCommand(s, args)
 			continue
 		}
 
-		executablePath, isExecutable := GetExecutablePath(command)
+		executablePath, executable := GetExecutablePath(command)
 
-		if isExecutable {
+		if executable {
 			ExecuteExternalCommand(executablePath, args)
 			continue
 		}
@@ -67,25 +67,25 @@ func ParseInput(inputs string) (command string, args []string) {
 	return parts[0], parts[1:]
 }
 
-func Echo(shell *Shell, args []string) {
+func Echo(s *Shell, args []string) {
 	fmt.Println(strings.Join(args, " "))
 }
 
-func Exit(shell *Shell, args []string) {
+func Exit(s *Shell, args []string) {
 	os.Exit(0)
 }
 
-func Type(shell *Shell, args []string) {
+func Type(s *Shell, args []string) {
 	commandToCheck := args[0]
 
-	_, commandFound := shell.commandMap[commandToCheck]
+	_, commandFound := s.commandMap[commandToCheck]
 	if commandFound {
 		fmt.Printf("%s is a shell builtin\n", commandToCheck)
 		return
 	}
 
-	executablePath, isExecutable := GetExecutablePath(commandToCheck)
-	if !isExecutable {
+	executablePath, executable := GetExecutablePath(commandToCheck)
+	if !executable {
 		fmt.Printf("%s: not found\n", commandToCheck)
 		return
 	}
@@ -93,20 +93,20 @@ func Type(shell *Shell, args []string) {
 	fmt.Printf("%s is %s\n", commandToCheck, executablePath)
 }
 
-func GetExecutablePath(command string) (executablePath string, isExecutable bool) {
+func GetExecutablePath(command string) (executablePath string, executable bool) {
 	path := os.Getenv("PATH")
 	dirs := strings.Split(path, ":")
 
 	for _, dir := range dirs {
 		executablePath := filepath.Join(dir, command)
 
-		isExecutable, err := IsExecutable(executablePath)
+		executable, err := IsExecutable(executablePath)
 
 		if err != nil {
 			continue
 		}
 
-		if isExecutable {
+		if executable {
 			return executablePath, true
 		}
 	}
