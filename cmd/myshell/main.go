@@ -24,6 +24,7 @@ type Shell struct {
 }
 
 func (s *Shell) SetUpCommands() {
+	s.commandMap["cd"] = Cd
 	s.commandMap["exit"] = Exit
 	s.commandMap["echo"] = Echo
 	s.commandMap["pwd"] = Pwd
@@ -66,6 +67,13 @@ func ParseInput(inputs string) (command string, args []string) {
 	inputs = strings.Replace(inputs, "\n", "", 1)
 	parts := strings.Split(inputs, " ")
 	return parts[0], parts[1:]
+}
+
+func Cd(s *Shell, args []string) {
+	err := os.Chdir(args[0])
+	if err != nil {
+		fmt.Printf("cd: %s: No such file or directory\n", args[0])
+	}
 }
 
 func Echo(s *Shell, args []string) {
