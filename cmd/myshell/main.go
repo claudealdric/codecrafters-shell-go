@@ -95,12 +95,33 @@ func GetExecutablePath(command string) (executablePath string, isExecutable bool
 
 	for _, dir := range dirs {
 		executablePath := filepath.Join(dir, command)
-		if _, err := os.Stat(executablePath); err == nil {
-			if fileInfo, _ := os.Stat(executablePath); fileInfo.Mode()&0111 != 0 {
-				return executablePath, true
-			}
+
+		isExecutable, err := IsExecutable(executablePath)
+
+		if err != nil {
+			continue
+		}
+
+		if isExecutable {
+			return executablePath, true
 		}
 	}
 
 	return "", false
+}
+
+func IsExecutable(path string) (bool, error) {
+	_, err := os.Stat(path)
+
+	if err != nil {
+		return false, err
+	}
+
+	fileInfo, err := os.Stat(path)
+
+	if err != nil {
+		return false, err
+	}
+
+	return fileInfo.Mode()&0111 != 0, nil
 }
