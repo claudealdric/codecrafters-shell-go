@@ -10,7 +10,10 @@ import (
 )
 
 func main() {
-	shell := NewShell()
+	shell := Shell{
+		make(map[string]CommandHandler),
+	}
+	shell.SetUpCommands()
 	shell.Run()
 }
 
@@ -18,14 +21,6 @@ type CommandHandler func(shell *Shell, args []string)
 
 type Shell struct {
 	commandMap map[string]CommandHandler
-}
-
-func NewShell() *Shell {
-	shell := &Shell{
-		commandMap: make(map[string]CommandHandler),
-	}
-	shell.SetUpCommands()
-	return shell
 }
 
 func (shell *Shell) SetUpCommands() {
