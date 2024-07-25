@@ -70,7 +70,13 @@ func ParseInput(inputs string) (command string, args []string) {
 }
 
 func Cd(s *Shell, args []string) {
-	err := os.Chdir(args[0])
+	dir := args[0]
+
+	if dir == "~" {
+		dir = os.Getenv("HOME")
+	}
+
+	err := os.Chdir(dir)
 	if err != nil {
 		fmt.Printf("cd: %s: No such file or directory\n", args[0])
 	}
