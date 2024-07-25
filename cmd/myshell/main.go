@@ -26,6 +26,7 @@ type Shell struct {
 func (s *Shell) SetUpCommands() {
 	s.commandMap["exit"] = Exit
 	s.commandMap["echo"] = Echo
+	s.commandMap["pwd"] = Pwd
 	s.commandMap["type"] = Type
 }
 
@@ -73,6 +74,11 @@ func Echo(s *Shell, args []string) {
 
 func Exit(s *Shell, args []string) {
 	os.Exit(0)
+}
+
+func Pwd(s *Shell, args []string) {
+	dir, _ := os.Getwd()
+	fmt.Println(dir)
 }
 
 func Type(s *Shell, args []string) {
